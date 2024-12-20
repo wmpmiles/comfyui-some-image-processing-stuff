@@ -1108,6 +1108,13 @@ def util_tensor_max(tensor: Tensor, dims: Iterable[int]) -> Tensor:
     return curr
 
 
+def util_tensor_mean(tensor: Tensor, dims: Iterable[int]) -> Tensor:
+    curr = tensor
+    for dim in dims:
+        curr = torch.mean(curr, dim, True)
+    return curr
+
+
 def util_slice_dim(
     dim: int,
     start: int | None,
@@ -1174,7 +1181,44 @@ def utils_dims_from_end(tensor: Tensor, dims: Iterable[int]) -> Tensor:
         unpermutation = unpermutation[:dim] + [index] + unpermutation[dim:]
     unpermuted = tensor.permute(unpermutation)
     return unpermuted
-    
+
+
+def util_shift_mean_terms(tensor: Tensor, new_mean: float, dims: Iterable[int], domain: tuple[float, float]) -> tuple[Tensor, Tensor]:
+    _check([
+        "_valid_dims(tensor, dims)",
+        "domain[0] <= new_mean <= domain[1]",
+        "domain[0] <= torch.min(tensor)",
+        "domain[1] >= torch.max(tensor)",
+    ])
+    dmin = domain[0]
+    dmax = domain[1]
+    mean = util_tensor_mean(tensor, dims)
+    minimum = util_tensor_min(tensor, dims)
+    maximum = util_tensor_max(tensor, dims)
+    delta = new_mean - mean 
+    scale = torch.ones(*mean.shape)
+    max_scale = (dmax - new_mean) / (maximum - mean)
+    min_scale = (dmin - new_mean) / (minimum - mean)
+    max_delta = dmax - max_scale * maximum
+    min_delta = dmin - min_scale * minimum
+    need_max = maximum + delta > dmax
+    need_min = minimum + delta < dmin
+    scale = torch.where(need_max, max_scale, scale)
+    scale = torch.where(need_min, min_scale, scale)
+    delta = torch.where(need_max, max_delta, delta)
+    delta = torch.where(need_min, min_delta, delta)
+    return (scale, delta)
+
+
+def util_shift_mean(tensor: Tensor, terms: tuple[Tensor, Tensor]) -> Tensor:
+    shifted = tensor * terms[0] + terms[1]
+    return shifted
+
+
+def util_unshift_mean(tensor: Tensor, terms: tuple[Tensor, Tensor]) -> Tensor:
+    unshifted = (tensor - terms[1]) / terms[0]
+    return unshifted
+
 
 #                             #
 # === CHECKING (INTERNAL) === #
