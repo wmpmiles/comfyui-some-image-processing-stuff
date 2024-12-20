@@ -14,6 +14,7 @@ class MaskCropInpaintPre:
             "scaler": ("SCALER", {}),
             "square": ("BOOLEAN", {"default": True}),
             "area_mult": ("FLOAT", {"default": 1, "min": 1, "step": 0.1}),
+            "color_shift": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
         }}
 
     RETURN_TYPES = ("IMAGE", "MASK", "MASK", "CONTEXT")
@@ -22,7 +23,7 @@ class MaskCropInpaintPre:
     FUNCTION = "f"
 
     @staticmethod
-    def f(image: Tensor, mask: Tensor, resampler: Resampler, scaler: Scaler, square: bool, area_mult: float) -> tuple[Tensor, Tensor, Tensor, tuple]:
+    def f(image: Tensor, mask: Tensor, resampler: Resampler, scaler: Scaler, square: bool, area_mult: float, color_shift: float) -> tuple[Tensor, Tensor, Tensor, tuple]:
         if mask.shape[0] != 1:
             raise ValueError("Mask must have a batch size of 1.")
         if image.shape[1:3] != mask.shape[1:3]:
@@ -53,13 +54,20 @@ class MaskCropInpaintPre:
         padded_image = gtfu.transform_pad_dim2_reflect(rescaled_image, (1, 2), padding)
         padded_mask = gtfu.transform_pad_dim2_zero(rescaled_mask, (1, 2), padding)
 
+        # Shift image channel means to 0.5 to account for non-zero-terminal-snr models
+        shifted_image = padded_image
+        terms = None
+        if color_shift != 0.0:
+            terms = gtfu.util_shift_mean_terms(padded_image, color_shift, (1, 2, 3), (0.0, 1.0))
+            shifted_image = gtfu.util_shift_mean(shifted_image, terms)
+
         # Rescale mask to the correct size for latent masking
         latent_mask_res = tuple((x // 8 for x in padded_res))
         latent_mask = gtfu.resample_nearest_neighbor_2d(cropped_mask, latent_mask_res, (1, 2))
 
         # Store context needed for post inpainting compositing
-        context = ("mask_crop_inpaint", image, bbox, inpaint_res, cropped_res)
-        return (padded_image, padded_mask, latent_mask, context)
+        context = ("mask_crop_inpaint", image, bbox, inpaint_res, cropped_res, terms)
+        return (shifted_image, padded_mask, latent_mask, context)
 
 
 class MaskCropInpaintPost:
@@ -82,15 +90,20 @@ class MaskCropInpaintPost:
         if context[0] != "mask_crop_inpaint":
             raise ValueError("Invalid context.")
 
-        original_image, bbox, inpaint_res, cropped_res = context[1:]
+        original_image, bbox, inpaint_res, cropped_res, terms = context[1:]
 
         if original_image.shape[0] != image.shape[0]:
             raise ValueError("Image must have same batch size as source.")
         if mask.shape[1:3] != original_image.shape[1:3]:
             raise ValueError("Mask must have same resolution as original image.")
 
+        # Unshift image if shift present
+        unshifted = image
+        if terms:
+            unshifted = gtfu.util_unshift_mean(unshifted, terms)
+
         # Prepare inpainted, cropped section
-        unpadded = image[:, :inpaint_res[0], :inpaint_res[1], :]
+        unpadded = unshifted[:, :inpaint_res[0], :inpaint_res[1], :]
         unpadded_linear = gtfu.colorspace_srgb_linear_from_gamma(unpadded)
         resampled_linear = torch.clamp(resampler(unpadded_linear, cropped_res, (1, 2)), 0.0, 1.0)
         uncropped_linear = gtfu.transform_uncrop_from_bbox(resampled_linear, bbox, 1, 2)
