@@ -43,7 +43,7 @@ class MaskCropInpaintPre:
         # Rescale image to chosen size
         inpaint_res = scaler(cropped_res)
         cropped_image_linear = gtfu.colorspace_srgb_linear_from_gamma(cropped_image)
-        rescaled_image_linear = resampler(cropped_image_linear, inpaint_res, (1, 2))
+        rescaled_image_linear = torch.clamp(resampler(cropped_image_linear, inpaint_res, (1, 2)), 0.0, 1.0)
         rescaled_image = gtfu.colorspace_srgb_gamma_from_linear(rescaled_image_linear)
         rescaled_mask = gtfu.resample_nearest_neighbor_2d(cropped_mask, inpaint_res, (1, 2))
 
@@ -92,7 +92,7 @@ class MaskCropInpaintPost:
         # Prepare inpainted, cropped section
         unpadded = image[:, :inpaint_res[0], :inpaint_res[1], :]
         unpadded_linear = gtfu.colorspace_srgb_linear_from_gamma(unpadded)
-        resampled_linear = resampler(unpadded_linear, cropped_res, (1, 2))
+        resampled_linear = torch.clamp(resampler(unpadded_linear, cropped_res, (1, 2)), 0.0, 1.0)
         uncropped_linear = gtfu.transform_uncrop_from_bbox(resampled_linear, bbox, 1, 2)
 
         # Composite
