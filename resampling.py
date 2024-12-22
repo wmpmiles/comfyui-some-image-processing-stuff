@@ -1,5 +1,5 @@
 import torch
-from . import gtfu
+from . import spipf
 from torch import Tensor
 from typing import TypeAlias, Callable
 from math import sqrt
@@ -28,9 +28,9 @@ class ResampleImage:
     def f(image: Tensor, scaler: Scaler, resampler: Resampler) -> tuple[Tensor]:
         _, h, w, _ = image.shape
         new_res = scaler((h, w))
-        linear = gtfu.colorspace_srgb_linear_from_gamma(image)
+        linear = spipf.colorspace_srgb_linear_from_gamma(image)
         resampled_linear = resampler(linear, new_res, (1, 2))
-        resampled = gtfu.colorspace_srgb_gamma_from_linear(resampled_linear)
+        resampled = spipf.colorspace_srgb_gamma_from_linear(resampled_linear)
         return (resampled, )
 
 
@@ -96,7 +96,7 @@ class ResamplerNearestNeighbor(ResamplerBase):
     @staticmethod
     def f() -> tuple[Resampler]:
         def resampler(tensor: Tensor, resolution: tuple[int, int], dims: tuple[int, int]) -> Tensor:
-            resampled = gtfu.resample_nearest_neighbor_2d(tensor, resolution, dims)
+            resampled = spipf.resample_nearest_neighbor_2d(tensor, resolution, dims)
             return resampled
         return (resampler, )
 
@@ -111,9 +111,9 @@ class ResamplerTriangle(ResamplerBase):
     @staticmethod
     def f(radius: int) -> tuple[Resampler]:
         def filter(x: Tensor) -> Tensor:
-            return gtfu.window_triangle(x, radius)
+            return spipf.window_triangle(x, radius)
         def resampler(tensor: Tensor, resolution: tuple[int, int], dims: tuple[int, int]) -> Tensor:
-            resampled = gtfu.resample_filter_2d_separable(tensor, resolution, radius, (filter, filter), dims)
+            resampled = spipf.resample_filter_2d_separable(tensor, resolution, radius, (filter, filter), dims)
             return resampled
         return (resampler, )
 
@@ -128,9 +128,9 @@ class ResamplerLanczos(ResamplerBase):
     @staticmethod
     def f(radius: int) -> tuple[Resampler]:
         def filter(x: Tensor) -> Tensor:
-            return torch.sinc(x) * gtfu.window_lanczos(x, radius)
+            return torch.sinc(x) * spipf.window_lanczos(x, radius)
         def resampler(tensor: Tensor, resolution: tuple[int, int], dims: tuple[int, int]) -> Tensor:
-            resampled = gtfu.resample_filter_2d_separable(tensor, resolution, radius, (filter, filter), dims)
+            resampled = spipf.resample_filter_2d_separable(tensor, resolution, radius, (filter, filter), dims)
             return resampled
         return (resampler, )
 
@@ -145,11 +145,11 @@ class ResamplerMitchellNetravali(ResamplerBase):
 
     @staticmethod
     def f(b: float, c: float) -> tuple[Resampler]:
-        radius = gtfu.window_mitchell_netravali_radius()
+        radius = spipf.window_mitchell_netravali_radius()
         def filter(x: Tensor) -> Tensor:
-            return gtfu.window_mitchell_netravali(x, b, c)
+            return spipf.window_mitchell_netravali(x, b, c)
         def resampler(tensor: Tensor, resolution: tuple[int, int], dims: tuple[int, int]) -> Tensor:
-            resampled = gtfu.resample_filter_2d_separable(tensor, resolution, radius, (filter, filter), dims)
+            resampled = spipf.resample_filter_2d_separable(tensor, resolution, radius, (filter, filter), dims)
             return resampled
         return (resampler, )
 
@@ -161,15 +161,15 @@ class ResamplerArea(ResamplerBase):
 
     @staticmethod
     def f() -> tuple[Resampler]:
-        radius = gtfu.window_area_radius()
+        radius = spipf.window_area_radius()
         def resampler(tensor: Tensor, resolution: tuple[int, int], dims: tuple[int, int]) -> Tensor:
             _, h, w, _ = tensor.shape
             H, W = resolution
             def filter_h(x: Tensor) -> Tensor:
-                return gtfu.window_area(x, h, H)
+                return spipf.window_area(x, h, H)
             def filter_w(x: Tensor) -> Tensor:
-                return gtfu.window_area(x, w, W)
-            resampled = gtfu.resample_filter_2d_separable(tensor, resolution, radius, (filter_h, filter_w), dims)
+                return spipf.window_area(x, w, W)
+            resampled = spipf.resample_filter_2d_separable(tensor, resolution, radius, (filter_h, filter_w), dims)
             return resampled
         return (resampler, )
 
@@ -184,9 +184,9 @@ class ResamplerJincLanczos(ResamplerBase):
     @staticmethod
     def f(radius: int) -> tuple[Resampler]:
         def filter(x: Tensor) -> Tensor:
-            return gtfu.special_jinc(x) * gtfu.window_lanczos(x, radius)
+            return spipf.special_jinc(x) * spipf.window_lanczos(x, radius)
         def resampler(tensor: Tensor, resolution: tuple[int, int], dims: tuple[int, int]) -> Tensor:
-            resampled = gtfu.resample_filter_2d(tensor, resolution, radius, filter, dims)
+            resampled = spipf.resample_filter_2d(tensor, resolution, radius, filter, dims)
             return resampled
         return (resampler, )
 

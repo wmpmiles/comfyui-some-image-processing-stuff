@@ -1,6 +1,6 @@
 import torch
 from torch import Tensor
-from . import gtfu
+from . import spipf
 from .resampling import Scaler, Resampler
 
 
@@ -31,39 +31,39 @@ class MaskCropInpaintPre:
 
         # Create bbox from mask
         binary_mask = mask.to(torch.bool)
-        bbox = gtfu.bbox_from_2d_binary(binary_mask[0])
+        bbox = spipf.bbox_from_2d_binary(binary_mask[0])
         if square:
-            bbox = gtfu.bbox_outer_square(bbox)
-        bbox = gtfu.bbox_expand_area(bbox, area_mult)
+            bbox = spipf.bbox_outer_square(bbox)
+        bbox = spipf.bbox_expand_area(bbox, area_mult)
 
         # Crop image and mask to bbox
-        cropped_image = gtfu.transform_crop_to_bbox(image, bbox, 1, 2)
-        cropped_mask = gtfu.transform_crop_to_bbox(mask, bbox, 1, 2)
+        cropped_image = spipf.transform_crop_to_bbox(image, bbox, 1, 2)
+        cropped_mask = spipf.transform_crop_to_bbox(mask, bbox, 1, 2)
         cropped_res = tuple(cropped_image.shape[1:3])
 
         # Rescale image to chosen size
         inpaint_res = scaler(cropped_res)
-        cropped_image_linear = gtfu.colorspace_srgb_linear_from_gamma(cropped_image)
+        cropped_image_linear = spipf.colorspace_srgb_linear_from_gamma(cropped_image)
         rescaled_image_linear = torch.clamp(resampler(cropped_image_linear, inpaint_res, (1, 2)), 0.0, 1.0)
-        rescaled_image = gtfu.colorspace_srgb_gamma_from_linear(rescaled_image_linear)
-        rescaled_mask = gtfu.resample_nearest_neighbor_2d(cropped_mask, inpaint_res, (1, 2))
+        rescaled_image = spipf.colorspace_srgb_gamma_from_linear(rescaled_image_linear)
+        rescaled_mask = spipf.resample_nearest_neighbor_2d(cropped_mask, inpaint_res, (1, 2))
 
         # Pad image to be a multiple of 8 in height and width
-        padded_res = tuple((gtfu.util_round_up_to_mult_of(x, 8) for x in inpaint_res))
+        padded_res = tuple((spipf.util_round_up_to_mult_of(x, 8) for x in inpaint_res))
         padding = tuple(((0, y - x) for x, y in zip(inpaint_res, padded_res)))
-        padded_image = gtfu.transform_pad_dim2_reflect(rescaled_image, (1, 2), padding)
-        padded_mask = gtfu.transform_pad_dim2_zero(rescaled_mask, (1, 2), padding)
+        padded_image = spipf.transform_pad_dim2_reflect(rescaled_image, (1, 2), padding)
+        padded_mask = spipf.transform_pad_dim2_zero(rescaled_mask, (1, 2), padding)
 
         # Shift image channel means to 0.5 to account for non-zero-terminal-snr models
         shifted_image = padded_image
         terms = None
         if color_shift != 0.0:
-            terms = gtfu.util_shift_mean_terms(padded_image, color_shift, (1, 2, 3), (0.0, 1.0))
-            shifted_image = gtfu.util_shift_mean(shifted_image, terms)
+            terms = spipf.util_shift_mean_terms(padded_image, color_shift, (1, 2, 3), (0.0, 1.0))
+            shifted_image = spipf.util_shift_mean(shifted_image, terms)
 
         # Rescale mask to the correct size for latent masking
         latent_mask_res = tuple((x // 8 for x in padded_res))
-        latent_mask = gtfu.resample_nearest_neighbor_2d(cropped_mask, latent_mask_res, (1, 2))
+        latent_mask = spipf.resample_nearest_neighbor_2d(cropped_mask, latent_mask_res, (1, 2))
 
         # Store context needed for post inpainting compositing
         context = ("mask_crop_inpaint", image, bbox, inpaint_res, cropped_res, terms)
@@ -100,23 +100,23 @@ class MaskCropInpaintPost:
         # Unshift image if shift present
         unshifted = image
         if terms:
-            unshifted = gtfu.util_unshift_mean(unshifted, terms)
+            unshifted = spipf.util_unshift_mean(unshifted, terms)
 
         # Prepare inpainted, cropped section
         unpadded = unshifted[:, :inpaint_res[0], :inpaint_res[1], :]
-        unpadded_linear = gtfu.colorspace_srgb_linear_from_gamma(unpadded)
+        unpadded_linear = spipf.colorspace_srgb_linear_from_gamma(unpadded)
         resampled_linear = torch.clamp(resampler(unpadded_linear, cropped_res, (1, 2)), 0.0, 1.0)
-        uncropped_linear = gtfu.transform_uncrop_from_bbox(resampled_linear, bbox, 1, 2)
+        uncropped_linear = spipf.transform_uncrop_from_bbox(resampled_linear, bbox, 1, 2)
 
         # Composite
-        original_linear = gtfu.colorspace_srgb_linear_from_gamma(original_image)
+        original_linear = spipf.colorspace_srgb_linear_from_gamma(original_image)
         composite_mask = mask.unsqueeze(3).expand(*original_image.shape)
         masked_original = (1 - composite_mask) * original_linear
         masked_inpainted = composite_mask * uncropped_linear
         composited_linear = masked_original + masked_inpainted
-        composited = gtfu.colorspace_srgb_gamma_from_linear(composited_linear)
+        composited = spipf.colorspace_srgb_gamma_from_linear(composited_linear)
         # We quantize to prevent colorspace conversion artifacts
-        composited_quantized = gtfu.filter_quantize(composited, 256, gtfu.RoundingMode.ROUND)
+        composited_quantized = spipf.filter_quantize(composited, 256, spipf.RoundingMode.ROUND)
 
         return (composited_quantized, )
 
@@ -173,14 +173,14 @@ class MaskCropPre:
 
         # Create bbox from mask
         binary_mask = mask.to(torch.bool)
-        bbox = gtfu.bbox_from_2d_binary(binary_mask[0])
+        bbox = spipf.bbox_from_2d_binary(binary_mask[0])
         if square:
-            bbox = gtfu.bbox_outer_square(bbox)
-        bbox = gtfu.bbox_expand_area(bbox, area_mult)
+            bbox = spipf.bbox_outer_square(bbox)
+        bbox = spipf.bbox_expand_area(bbox, area_mult)
 
         # Crop image and mask to bbox
-        cropped_image = gtfu.transform_crop_to_bbox(image, bbox, 1, 2)
-        cropped_mask = gtfu.transform_crop_to_bbox(mask, bbox, 1, 2)
+        cropped_image = spipf.transform_crop_to_bbox(image, bbox, 1, 2)
+        cropped_mask = spipf.transform_crop_to_bbox(mask, bbox, 1, 2)
         cropped_res = tuple(cropped_image.shape[1:3])
 
         context = ("mask_crop", image, bbox)
@@ -254,14 +254,14 @@ __all__ = ["NODE_CLASS_MAPPINGS"]
 
 def blur_expand_mask(mask: Tensor, sigma: float, dilation_radius: int) -> Tensor:
         if dilation_radius > 0:
-            dilated_mask = gtfu.filter_morpho_dilate(mask, dilation_radius, (1, 2))
+            dilated_mask = spipf.filter_morpho_dilate(mask, dilation_radius, (1, 2))
         else:
             dilated_mask = mask
         if sigma > 0:
-            gaussian_radius = int(gtfu.special_gaussian_area_radius(0.99, sigma))
+            gaussian_radius = int(spipf.special_gaussian_area_radius(0.99, sigma))
             kernel_xs = torch.arange(-gaussian_radius, gaussian_radius + 1).to(torch.float)
-            gaussian_kernel_1d = gtfu.special_gaussian(kernel_xs, sigma)
-            blurred_mask = gtfu.filter_convolve_2d_separable(dilated_mask, (gaussian_kernel_1d, gaussian_kernel_1d), (1, 2))
+            gaussian_kernel_1d = spipf.special_gaussian(kernel_xs, sigma)
+            blurred_mask = spipf.filter_convolve_2d_separable(dilated_mask, (gaussian_kernel_1d, gaussian_kernel_1d), (1, 2))
         else:
             blurred_mask = dilated_mask
         return blurred_mask
