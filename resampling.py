@@ -264,6 +264,22 @@ class ScalerPixelDeltas(ScalerBase):
         return (scaler, )
 
 
+class ScalerFixed(ScalerBase):
+    @staticmethod
+    def INPUT_TYPES():
+        return {"required": {
+            "width": ("INT", {"default": 1024, "min": 1}),
+            "height": ("INT", {"default": 1024, "min": 1}),
+        }}
+
+    @staticmethod
+    def f(width: int, height: int) -> tuple[Scaler]:
+        def scaler(_: tuple[int, int]) -> tuple[int, int]:
+            scaled = (height, width)
+            return scaled
+        return (scaler, )
+
+
 class ScalerMegapixels(ScalerBase):
     @staticmethod
     def INPUT_TYPES():
@@ -295,6 +311,7 @@ NODE_CLASS_MAPPINGS = {
     "Resampler | Area"               : ResamplerArea,
     "Scaler | Side"                  : ScalerSide,
     "Scaler | Area"                  : ScalerArea,
+    "Scaler | Fixed"                 : ScalerFixed,
     "Scaler | Sides Unlinked"        : ScalerUnlinked,
     "Scaler | Pixel Deltas"          : ScalerPixelDeltas,
     "Scaler | Megapixels"            : ScalerMegapixels,
