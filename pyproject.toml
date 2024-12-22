@@ -1,0 +1,15 @@
+# pyproject.toml
+[project]
+name = "ComfyUI-SIPS"
+description = "Image resampling, color grading, and mask-crop inpainting."
+version = "0.0.1"
+license = { file = "LICENSE" }
+dependencies  = []
+
+[project.urls]
+Repository = "https://github.com/wmpmiles/comfyui-some-image-processing-stuff"
+
+[tool.comfy]
+PublisherId = "wmpmiles"
+DisplayName = "Some Image Processing Stuff for ComfyUI"
+Icon = ""
