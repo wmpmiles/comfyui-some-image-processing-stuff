@@ -245,7 +245,7 @@ NODE_CLASS_MAPPINGS = {
     "Mask-Crop Inpaint | Post": MaskCropInpaintPost,
     "Mask-Crop | Pre": MaskCropPre,
     "Mask-Crop | Post": MaskCropPost,
-    "LatentZeroMask": LatentZeroMask,
+    "Latent Zero Mask": LatentZeroMask,
     "Blur Mask": BlurMask,
 }
 
