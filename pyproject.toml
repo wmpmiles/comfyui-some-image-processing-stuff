@@ -1,6 +1,6 @@
 # pyproject.toml
 [project]
-name = "ComfyUI-SIPS"
+name = "comfyui-sips"
 description = "Image resampling, color grading, and mask-crop inpainting."
 version = "0.0.1"
 license = { file = "LICENSE" }
