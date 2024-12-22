@@ -1,0 +1,14 @@
+[project]
+name = "comfyui-gtf-utilities"
+description = "Generalised 'image' processing nodes for images, masks, latents, and combinations thereof."
+version = "1.0.0"
+license = {file = "LICENSE"}
+
+[project.urls]
+Repository = "https://github.com/wmpmiles/ComfyUI-GTF-Utilities"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "ComfyUI-GTF-Utilities"
+Icon = ""
