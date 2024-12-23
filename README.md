@@ -102,3 +102,21 @@ inpainting.
 | **Latent Zero Mask**                           | Zeros a masked area of a latent to prepare it for full-denoise inpainting. |
 | **Blur Mask**                                  | Blurs and expands a mask to facilitate better compositing of inpainted areas. |
 | **Mask-Crop \| Pre** and **Mask-Crop \| Post** | Stripped down versions of the main inpainting nodes that do no resizing or color shifting for use with other tools and workflows. |
+
+# Examples
+
+## Resampling
+
+![Resampling example.](examples/resample.png)
+
+## Color Grading
+
+![Color grading example.](examples/color_grading.png)
+
+## Inpainting
+
+![Inpainting example.](examples/inpaint.png)
+
+## Detailing
+
+![Detailing example.](examples/detail.png)
