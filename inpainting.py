@@ -230,7 +230,7 @@ class BlurMask:
         }}
     RETURN_TYPES = ("MASK", "IMAGE")
     RETURN_NAMES = ("mask", "mask_image")
-    CATEGORY = "inpaint"
+    CATEGORY = "mask"
     FUNCTION = "f"
 
     @staticmethod

@@ -65,7 +65,7 @@ class ColorGrading:
 
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = ("image", )
-    CATEGORY = "inpaint"
+    CATEGORY = "image/postprocessing"
     FUNCTION = "f"
 
     @staticmethod

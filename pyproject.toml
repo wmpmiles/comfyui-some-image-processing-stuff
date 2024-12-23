@@ -2,7 +2,7 @@
 [project]
 name = "comfyui-sips"
 description = "Image resampling, color grading, and mask-crop inpainting."
-version = "0.0.1"
+version = "0.0.2"
 license = { file = "LICENSE" }
 dependencies  = []
 

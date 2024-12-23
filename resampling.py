@@ -21,7 +21,7 @@ class ResampleImage:
 
     RETURN_TYPES = ("IMAGE", )
     RETURN_NAMES = ("image", )
-    CATEGORY = "inpaint/resampling"
+    CATEGORY = "image"
     FUNCTION = "f" 
 
     @staticmethod
@@ -45,7 +45,7 @@ class ResampleMask:
 
     RETURN_TYPES = ("MASK", )
     RETURN_NAMES = ("mask", )
-    CATEGORY = "inpaint/resampling"
+    CATEGORY = "mask"
     FUNCTION = "f" 
 
     @staticmethod
@@ -67,7 +67,7 @@ class ResampleLatent:
 
     RETURN_TYPES = ("LATENT", )
     RETURN_NAMES = ("latent", )
-    CATEGORY = "inpaint/resampling"
+    CATEGORY = "latent"
     FUNCTION = "f" 
 
     @staticmethod
@@ -84,7 +84,7 @@ class ResampleLatent:
 class ResamplerBase:
     RETURN_TYPES = ("RESAMPLER", )
     RETURN_NAMES = ("resampler", )
-    CATEGORY = "inpaint/resampling"
+    CATEGORY = "resampling"
     FUNCTION = "f" 
 
 
@@ -195,7 +195,7 @@ class ResamplerJincLanczos(ResamplerBase):
 class ScalerBase:
     RETURN_TYPES = ("SCALER", )
     RETURN_NAMES = ("scaler", )
-    CATEGORY = "inpaint/resampling"
+    CATEGORY = "resampling/scaler"
     FUNCTION = "f" 
 
 
